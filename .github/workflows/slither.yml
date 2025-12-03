@@ -1,0 +1,52 @@
+name: Slither Security Analysis
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install Slither and solc-select
+      run: |
+        pip install slither-analyzer
+        pip install solc-select
+        
+    - name: Install specific Solidity compiler
+      run: |
+        solc-select install 0.8.20
+        solc-select use 0.8.20
+        echo "Installed solc version:"
+        solc --version
+        
+    - name: Run Slither Analysis
+      run: |
+        echo "=== Running Slither Security Analysis ==="
+        echo ""
+        
+        if slither . --fail-high --exclude-informational --exclude-low; then
+          echo "✅ No high severity issues found!"
+          echo "✅ CI/CD Pipeline PASSED"
+        else
+          echo "❌ High severity issues found!"
+          echo "❌ CI/CD Pipeline FAILED"
+          exit 1
+        fi
+        
+    - name: Generate Human Summary
+      run: |
+        echo ""
+        echo "=== Detailed Security Report ==="
+        slither . --print human-summary --exclude-informational --exclude-low || true
